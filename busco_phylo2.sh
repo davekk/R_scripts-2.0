@@ -1,56 +1,26 @@
+# mamba create -n funannotate2 gfftk gapmm2 minimap2 miniprot snap "augustus==3.5.0" glimmerhmm diamond trnascan-se table2asn gb-io buscolite
+
+# mamba create -n busco6 -c conda-forge -c bioconda busco=6.0.0
+
+# mamba create -n rrna_env -c conda-forge -c bioconda mafft clipkit seqkit parallel amas iqtree
+
 mamba activate funannotate2
 
-#genome clean for gene annotation  
- for f in new_genomes/*.f*a; do bn=$(basename "$f");echo "runnin
-g file $(basename "$f")"; funannotate2 clean -f "$f" -o new_geno_rmod/"${bn%%.*}.clean.fna"  --cpus 6;echo "Done processing $bn"; done
-
+# standardizing naming for genome files
 for f in new_geno_rmod/*.clean.fna; do
     mv "$f" "${f// /_}"
 done
 
+#genome clean for gene annotation  
 for f in new_geno_rmod/*.f*a; do bn=$(basename "$f");echo "running file $(basename "$f")"; funannotate2 sort -f "$f" -o new_geno_rmod/"${bn%%.*}.sort.fna"  --cpus 6; echo "Done processing $bn"; done
 
 mamba deactivate
 
 mamba activate busco6
 
-#test busco that shit
+#test busco that code
 PYTHONWARNINGS="ignore" busco -i new_geno_rmod/ -l saccharomycetes_odb12 -o busco_S2 -m genome --cpu 2
 
-# raw data from
-# https://busco-data.ezlab.org/v5/data/lineages
-for f in new_genome_mask/*.fna; do
-    bn=$(basename "$f" .clean.fna)   # strip .clean.fna from the name
-
-        # Saccharomycetes group
-    if [[ "$bn" =~ Saccharomyces|Kluyveromyces|Pichia|Candida|Metschnikowia|Debaryomyces|Meyerozyma|Issatchenkia|Hanseniaspora ]]; then
-        lineage="saccharomycetes_odb12"
-
-    # Sordariomycetes
-    elif [[ "$bn" =~ Fusarium ]]; then
-        lineage="sordariomycetes_odb12"
-
-    # Leotiomycetes
-    elif [[ "$bn" =~ Botrytis ]]; then
-        lineage="leotiomycetes_odb12"
-
-    # Dothideomycetes (map to sordariomycetes as closest)
-    elif [[ "$bn" =~ Alternaria ]]; then
-        lineage="dothideomycetes_odb12"
-
-    # Tremellomycetes
-    elif [[ "$bn" =~ Vishniacozyma ]]; then
-        lineage="tremellomycetes_odb12"
-
-    # Microbotryomycetes
-    elif [[ "$bn" =~ Rhodotorula ]]; then
-        lineage="microbotryomycetes_odb12"
-    fi
-
-    echo "▶ Running BUSCO on $bn with $lineage"
-    PYTHONWARNINGS="ignore" busco -i "$f"  -l /mnt/d/sacc_genomes/new_busco/busco_downloads/lineages/$lineage -o new_busco/"${bn}_${lineage}" -m genome --cpu 6
-    echo "✔ Finished $bn"
-done
 
 for f in new_genome_mask/*.fna; do
     bn=$(basename "$f" .clean.fna)   # strip .clean.fna from the name
@@ -113,7 +83,7 @@ for f in trimmed/*.aln.clipkit.faa; do
     count=$(seqkit seq -n "$f" | wc -l)
     echo "$(basename "$f"): $count sequences"
 done | column -t
-# more effecient with grep
+# more efficient with grep
 for f in trimmed/*.aln.clipkit.faa; do
     count=$(grep -c "^>" "$f")
     echo "$(basename "$f"): $count sequences"
